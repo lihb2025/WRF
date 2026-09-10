@@ -256,6 +256,7 @@ contains
 #include "da_qc_gmi.inc"
 #include "da_qc_goesimg.inc"
 #include "da_qc_goesabi.inc"
+#include "da_qc_giirs.inc"
 #include "da_write_iv_rad_ascii.inc"
 #include "da_write_iv_rad_for_multi_inc.inc"
 #include "da_read_iv_rad_for_multi_inc.inc"

@@ -159,6 +159,9 @@ subroutine da_radiance_init(iv,ob)
    else if ( trim( crtm_sensor_name(rtminit_sensor(n))) == 'gmi' ) then
       nchanl(n)  = 13
       nscan(n)   = 221
+   else if ( trim( crtm_sensor_name(rtminit_sensor(n))) == 'giirs' ) then
+      nchanl(n)  = 721
+      nscan(n)   = 128
    else
       write(unit=message(1),fmt='(A)') "Unrecognized instrument: "
       write(unit=message(2),fmt='(A,I4)') "rtminit_platform = ",rtminit_platform(n)
