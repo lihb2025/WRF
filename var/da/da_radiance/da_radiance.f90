@@ -50,7 +50,7 @@ module da_radiance
       qc_good, qc_bad,myproc,biascorr,thinning,thinning_mesh, &
       rad_monitoring, monitor_on, kts, kte, kms, kme, calc_weightfunc, &
       use_mwtsobs, use_mwhsobs, use_mwhs2obs, use_atmsobs, use_amsr2obs, use_ahiobs,use_gmiobs, &
-      use_hirs4obs, use_mhsobs, use_giirs, bufr_year, bufr_month,bufr_day,bufr_hour, &
+      use_hirs4obs, use_mhsobs, use_giirsobs, bufr_year, bufr_month,bufr_day,bufr_hour, &
       bufr_minute, bufr_second,bufr_solzen, bufr_station_height, &
       bufr_landsea_mask,bufr_solazi,tovs_end, max_tovs_input, bufr_satzen, nchan_mhs, &
       nchan_msu, nchan_amsua,nchan_hirs2, nchan_hirs3, nchan_hirs4, nchan_airs, &
