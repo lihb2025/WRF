@@ -481,7 +481,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
 !-----------------------------------------------------------------------
 
       allocate(data_all(nchan))
-      ata_all = missing_r
+      data_all = missing_r
 
       do i = 1, nchan
 
