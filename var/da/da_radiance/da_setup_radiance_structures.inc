@@ -143,16 +143,19 @@ subroutine da_setup_radiance_structures( grid, ob, iv )
          filename = 'ssmis'
          call da_read_obs_bufrssmis ('ssmis    ',iv, filename)
       end if
+
       if (use_iasiobs) then
          write(unit=stdout,fmt='(a)') 'Reading iasi data from iasi.bufr'
          filename = 'iasi'
          call da_read_obs_bufriasi ('iasi     ',iv, filename)
       end if
+
       if (use_seviriobs) then
          write(unit=stdout,fmt='(a)') 'Reading seviri data from seviri.bufr'
          filename = 'seviri'
          call da_read_obs_bufrseviri ('seviri   ',iv, filename)
       end if
+
       if (use_amsr2obs) then
 #if defined(HDF5)
          write(unit=stdout,fmt='(a)') 'Reading AMSR2 data in HDF5 format'
@@ -162,6 +165,7 @@ subroutine da_setup_radiance_structures( grid, ob, iv )
          call da_error(__FILE__,__LINE__,message(1:1))
 #endif
       end if
+
       if (use_ahiobs) then
          call da_get_unit(ahi_info_unit)
          open(unit=ahi_info_unit,file='ahi_info',status='old',iostat=iret)
@@ -196,7 +200,8 @@ subroutine da_setup_radiance_structures( grid, ob, iv )
             !filename = 'ahi'
             !call da_read_obs_bufrahi ('ahi   ',iv, filename)
          !end if	
-      end if	  
+      end if
+
       if (use_goesimgobs) then
          write(unit=stdout,fmt='(a)') 'Reading netcdf goes imager GVAR data'
          !if (imager_format==1)then
@@ -217,6 +222,7 @@ subroutine da_setup_radiance_structures( grid, ob, iv )
          !end if
          !write(unit=stdout,fmt='(a)') 'Finish reading goesimg data'
       end if
+
       if (use_gmiobs) then
 #if defined(HDF5)
          write(unit=stdout,fmt='(a)') 'Reading GMI data in HDF5 format'
@@ -226,6 +232,17 @@ subroutine da_setup_radiance_structures( grid, ob, iv )
          call da_error(__FILE__,__LINE__,message(1:1))
 #endif
       end if
+
+      if (use_giirsobs) then
+#if defined(HDF5)
+         write(unit=stdout,fmt='(a)') 'Reading GIIRS data in HDF5 format'
+         call da_read_obs_hdf5giirs (iv, 'L1GIIRS')
+#else
+         message(1)='To read GIIRS data, WRFDA must be compiled with HDF5'
+         call da_error(__FILE__,__LINE__,message(1:1))
+#endif
+      end if
+      
    end if
 
    if ( use_filtered_rad ) then
