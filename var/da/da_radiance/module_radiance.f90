@@ -137,7 +137,7 @@ module module_radiance
   ! For instrument names that can not be directly mapped here to names
   ! used in crtm coeff names, they will be re-set in
   ! da_crtm_sensor_descriptor.inc
-  Character (len=8), Dimension(0:88) :: crtm_sensor_name  =            &
+  Character (len=8), Dimension(0:111) :: crtm_sensor_name  =            &
      & (/ 'hirs    ', 'msu     ', 'ssu     ', 'amsua   ', 'amsub   ',  &
         & 'avhrr   ', 'ssmi    ', 'xxxxxxxx', 'spare   ', 'tmi     ',  &
         & 'ssmis   ', 'airs    ', 'hsb     ', 'modis   ', 'atsr    ',  &
