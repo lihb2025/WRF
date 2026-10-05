@@ -76,7 +76,7 @@ module module_radiance
   ! cf. RTTOV-11 Users Guide Table 2
   ! index 19 is sentinel3 in Table 2, here we keep it as tiros for 
   ! WRFDA backward compatibility
-  Character (len=8), Parameter :: rttov_platform_name(1:59) =          &
+  Character (len=9), Parameter :: rttov_platform_name(1:59) =          &
      & (/ 'noaa     ', 'dmsp     ', 'meteosat ', 'goes     ', 'gms      ',  &
         & 'fy2      ', 'trmm     ', 'ers      ', 'eos      ', 'metop    ',  &
         & 'envisat  ', 'msg      ', 'fy1      ', 'adeos    ', 'mtsat    ',  &
@@ -155,7 +155,12 @@ module module_radiance
         & 'xxxxxxxx', 'gmi     ', 'xxxxxxxx', 'mwhs2   ', 'xxxxxxxx',  &
         & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx',  &
         & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx',  &
-        & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx'/)
+        & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx',  &
+        & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx',  &
+        & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'giirs   ', 'agri    ',  &
+        & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx',  &
+        & 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx', 'xxxxxxxx',  &
+        & 'xxxxxxxx', 'xxxxxxxx'/)
 
 #ifdef RTTOV
    type (rttov_coefs), allocatable   :: coefs(:)     ! coefficients structure
