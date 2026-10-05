@@ -6,8 +6,8 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    !     the WRFDA radiance innovation structure.
    !
    !     Current simplified version:
-   !       1. Read ES_RealLW and ES_RealMW
-   !       2. Read WN_LW and WN_MW
+   !       1. Read Only ES_RealLW
+   !       2. Read Only WN_LW
    !       3. Convert spectral radiance to brightness temperature
    !          using Planck's law
    !       4. No cloud information is read
@@ -31,9 +31,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    integer(HID_T) :: dhnd
 
    integer(HSIZE_T) :: sz_lw(2)
-   integer(HSIZE_T) :: sz_mw(2)
    integer(HSIZE_T) :: sz_wn_lw(1)
-   integer(HSIZE_T) :: sz_wn_mw(1)
 
 !-----------------------------------------------------------------------
 !  GIIRS dimensions
@@ -41,25 +39,20 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
 
    integer, parameter :: nobs_giirs = 128
    integer, parameter :: nwn_lw     = 725
-   integer, parameter :: nwn_mw     = 965
 
 !-----------------------------------------------------------------------
 !  HDF5 data
 !-----------------------------------------------------------------------
 
    real(4) :: es_real_lw(nwn_lw,nobs_giirs)
-   real(4) :: es_real_mw(nwn_mw,nobs_giirs)
-
    real(4) :: wn_lw(nwn_lw)
-   real(4) :: wn_mw(nwn_mw)
 
 !-----------------------------------------------------------------------
 !  Brightness temperature
 !-----------------------------------------------------------------------
 
-   real(r_kind) :: tb(1690,nobs_giirs)
+   real(r_kind) :: tb(725,nobs_giirs)
    real(r_kind) :: tbb_lw(nwn_lw,nobs_giirs)
-   real(r_kind) :: tbb_mw(nwn_mw,nobs_giirs)
 
 !-----------------------------------------------------------------------
 !  Planck constants
@@ -279,76 +272,13 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    call H5Dclose_f(dhnd, iret)
 
 !-----------------------------------------------------------------------
-!  5. Read MW wavenumber
-!-----------------------------------------------------------------------
-
-   sz_wn_mw(1) = nwn_mw
-
-   call H5Dopen_f(fhnd, '/Data/WN_MW', dhnd, iret)
-
-   if (iret < 0) then
-
-      call da_warning(__FILE__,__LINE__, &
-         (/"HDF5 open error for: /Data/WN_MW"/))
-
-      call H5Fclose_f(fhnd, iret)
-
-      return
-
-   end if
-
-   call H5Dread_f(dhnd, H5T_NATIVE_REAL, wn_mw, sz_wn_mw, iret, &
-                  H5S_ALL_F, H5S_ALL_F)
-
-   if (iret < 0) then
-
-      call da_warning(__FILE__,__LINE__, &
-         (/"HDF5 read error for: /Data/WN_MW"/))
-
-   endif
-
-   call H5Dclose_f(dhnd, iret)
-
-!-----------------------------------------------------------------------
-!  6. Read MW real radiance
-!-----------------------------------------------------------------------
-
-   sz_mw(1) = nwn_mw
-   sz_mw(2) = nobs_giirs
-
-   call H5Dopen_f(fhnd, '/Data/ES_RealMW', dhnd, iret)
-
-   if (iret < 0) then
-
-      call da_warning(__FILE__,__LINE__, &
-         (/"HDF5 open error for: /Data/ES_RealMW"/))
-
-      call H5Fclose_f(fhnd, iret)
-
-      return
-
-   end if
-
-   call H5Dread_f(dhnd, H5T_NATIVE_REAL, es_real_mw, sz_mw, iret, &
-                  H5S_ALL_F, H5S_ALL_F)
-
-   if (iret < 0) then
-
-      call da_warning(__FILE__,__LINE__, &
-         (/"HDF5 read error for: /Data/ES_RealMW"/))
-
-   endif
-
-   call H5Dclose_f(dhnd, iret)
-
-!-----------------------------------------------------------------------
-!  7. Close HDF5 file
+!  5. Close HDF5 file
 !-----------------------------------------------------------------------
 
    call H5Fclose_f(fhnd, iret)
 
 !-----------------------------------------------------------------------
-!  8. Calculate LW brightness temperature
+!  6. Calculate LW brightness temperature
 !-----------------------------------------------------------------------
 
    do j = 1, nobs_giirs
@@ -374,33 +304,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end do
 
 !-----------------------------------------------------------------------
-!  9. Calculate MW brightness temperature
-!-----------------------------------------------------------------------
-
-   do j = 1, nobs_giirs
-
-      do i = 1, nwn_mw
-
-         radiance = real(es_real_mw(i,j),r_kind)
-
-         if (radiance > 0.0_r_kind) then
-
-            tbb_mw(i,j) = c2 * real(wn_mw(i),r_kind) / &
-               log(1.0_r_kind + &
-               c1 * real(wn_mw(i),r_kind)**3 / radiance)
-
-         else
-
-            tbb_mw(i,j) = missing_r
-
-         end if
-
-      end do
-
-   end do
-
-!-----------------------------------------------------------------------
-!  10. Print test values
+!  7. Print test values
 !-----------------------------------------------------------------------
 
    write(unit=stdout,fmt=*) 'GIIRS LW test:'
@@ -408,13 +312,8 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    write(unit=stdout,fmt=*) 'ES_RealLW(1,1) = ', es_real_lw(1,1)
    write(unit=stdout,fmt=*) 'TBB_LW(1,1)    = ', tbb_lw(1,1)
 
-   write(unit=stdout,fmt=*) 'GIIRS MW test:'
-   write(unit=stdout,fmt=*) 'WN_MW(1)       = ', wn_mw(1)
-   write(unit=stdout,fmt=*) 'ES_RealMW(1,1) = ', es_real_mw(1,1)
-   write(unit=stdout,fmt=*) 'TBB_MW(1,1)    = ', tbb_mw(1,1)
-
 !-----------------------------------------------------------------------
-!  11. Allocate sequential structure
+!  8. Allocate sequential structure
 !-----------------------------------------------------------------------
 
    if (.not. head_allocated) then
@@ -430,7 +329,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end if
 
 !-----------------------------------------------------------------------
-!  12. Loop over GIIRS observations
+!  9. Loop over GIIRS observations
 !
 !      NOTE:
 !      At this stage we only test the radiance -> TBB conversion.
@@ -507,7 +406,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end do
 
 !-----------------------------------------------------------------------
-!  13. Allocate innovation structure
+!  10. Allocate innovation structure
 !-----------------------------------------------------------------------
 
    iv%total_rad_pixel   = iv%total_rad_pixel + num_giirs_used
@@ -530,7 +429,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end if
 
 !-----------------------------------------------------------------------
-!  14. Transfer sequential structure to innovation structure
+!  11. Transfer sequential structure to innovation structure
 !-----------------------------------------------------------------------
 
    p => head
@@ -550,7 +449,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    deallocate(p)
 
 !-----------------------------------------------------------------------
-!  15. Cleanup
+!  12. Cleanup
 !-----------------------------------------------------------------------
 
    deallocate(data_all)
