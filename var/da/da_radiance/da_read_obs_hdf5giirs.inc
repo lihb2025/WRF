@@ -32,6 +32,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
 
    integer(HSIZE_T) :: sz_lw(2)
    integer(HSIZE_T) :: sz_wn_lw(1)
+   integer(HSIZE_T) :: sz_geo(1)
 
 !-----------------------------------------------------------------------
 !  GIIRS dimensions
@@ -48,10 +49,22 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    real(4) :: wn_lw(nwn_lw)
 
 !-----------------------------------------------------------------------
+!  Geolocation and observation angles
+!-----------------------------------------------------------------------
+
+   real(4) :: latitude_lw(nobs_giirs)
+   real(4) :: longitude_lw(nobs_giirs)
+
+   real(4) :: sensor_zenith_lw(nobs_giirs)
+   real(4) :: sensor_azimuth_lw(nobs_giirs)
+
+   real(4) :: solar_zenith_lw(nobs_giirs)
+   real(4) :: solar_azimuth_lw(nobs_giirs)
+
+!-----------------------------------------------------------------------
 !  Brightness temperature
 !-----------------------------------------------------------------------
 
-   real(r_kind) :: tb(725,nobs_giirs)
    real(r_kind) :: tbb_lw(nwn_lw,nobs_giirs)
 
 !-----------------------------------------------------------------------
@@ -79,7 +92,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    integer :: i,j
    integer :: nchan
 
-   real(r_kind) :: radiance
+   real(r_kind) :: radiance_lw
 
    logical :: fexist
 
@@ -93,8 +106,6 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
 
    logical :: head_allocated
    logical :: outside, outside_all
-
-   real(r_kind), allocatable :: data_all(:)
 
 !-----------------------------------------------------------------------
 !  Statistics
@@ -113,6 +124,17 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    num_giirs_local  = 0
    num_giirs_global = 0
    num_giirs_used   = 0
+
+!-----------------------------------------------------------------------
+!  Initialize geolocation and observation angles
+!-----------------------------------------------------------------------
+
+   latitude_lw       = 0.0
+   longitude_lw      = 0.0
+   sensor_zenith_lw  = 0.0
+   sensor_azimuth_lw = 0.0
+   solar_zenith_lw   = 0.0
+   solar_azimuth_lw  = 0.0
 
 !-----------------------------------------------------------------------
 !  0. GIIRS instrument identification
@@ -272,26 +294,206 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    call H5Dclose_f(dhnd, iret)
 
 !-----------------------------------------------------------------------
-!  5. Close HDF5 file
+!  5. Read geolocation and observation angles
+!-----------------------------------------------------------------------
+
+   sz_geo(1) = nobs_giirs
+
+!-----------------------------------------------------------------------
+!  5.1 Read latitude
+!-----------------------------------------------------------------------
+
+   call H5Dopen_f(fhnd, '/Geolocation/Latitude_LW', dhnd, iret)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 open error for: /Geolocation/Latitude_LW"/))
+
+      call H5Fclose_f(fhnd, iret)
+
+      return
+
+   end if
+
+   call H5Dread_f(dhnd, H5T_NATIVE_REAL, latitude_lw, sz_geo, iret, &
+                  H5S_ALL_F, H5S_ALL_F)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 read error for: /Geolocation/Latitude_LW"/))
+
+   endif
+
+   call H5Dclose_f(dhnd, iret)
+
+!-----------------------------------------------------------------------
+!  5.2 Read longitude
+!-----------------------------------------------------------------------
+
+   call H5Dopen_f(fhnd, '/Geolocation/Longitude_LW', dhnd, iret)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 open error for: /Geolocation/Longitude_LW"/))
+
+      call H5Fclose_f(fhnd, iret)
+
+      return
+
+   end if
+
+   call H5Dread_f(dhnd, H5T_NATIVE_REAL, longitude_lw, sz_geo, iret, &
+                  H5S_ALL_F, H5S_ALL_F)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 read error for: /Geolocation/Longitude_LW"/))
+
+   endif
+
+   call H5Dclose_f(dhnd, iret)
+
+!-----------------------------------------------------------------------
+!  5.3 Read sensor zenith angle
+!-----------------------------------------------------------------------
+
+   call H5Dopen_f(fhnd, '/Geolocation/Sensor_Zenith_LW', dhnd, iret)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 open error for: /Geolocation/Sensor_Zenith_LW"/))
+
+      call H5Fclose_f(fhnd, iret)
+
+      return
+
+   end if
+
+   call H5Dread_f(dhnd, H5T_NATIVE_REAL, sensor_zenith_lw, sz_geo, iret, &
+                  H5S_ALL_F, H5S_ALL_F)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 read error for: /Geolocation/Sensor_Zenith_LW"/))
+
+   endif
+
+   call H5Dclose_f(dhnd, iret)
+
+!-----------------------------------------------------------------------
+!  5.4 Read sensor azimuth angle
+!-----------------------------------------------------------------------
+
+   call H5Dopen_f(fhnd, '/Geolocation/Sensor_Azimuth_LW', dhnd, iret)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 open error for: /Geolocation/Sensor_Azimuth_LW"/))
+
+      call H5Fclose_f(fhnd, iret)
+
+      return
+
+   end if
+
+   call H5Dread_f(dhnd, H5T_NATIVE_REAL, sensor_azimuth_lw, sz_geo, iret, &
+                  H5S_ALL_F, H5S_ALL_F)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 read error for: /Geolocation/Sensor_Azimuth_LW"/))
+
+   endif
+
+   call H5Dclose_f(dhnd, iret)
+
+!-----------------------------------------------------------------------
+!  5.5 Read solar zenith angle
+!-----------------------------------------------------------------------
+
+   call H5Dopen_f(fhnd, '/Geolocation/Solar_Zenith_LW', dhnd, iret)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 open error for: /Geolocation/Solar_Zenith_LW"/))
+
+      call H5Fclose_f(fhnd, iret)
+
+      return
+
+   end if
+
+   call H5Dread_f(dhnd, H5T_NATIVE_REAL, solar_zenith_lw, sz_geo, iret, &
+                  H5S_ALL_F, H5S_ALL_F)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 read error for: /Geolocation/Solar_Zenith_LW"/))
+
+   endif
+
+   call H5Dclose_f(dhnd, iret)
+
+!-----------------------------------------------------------------------
+!  5.6 Read solar azimuth angle
+!-----------------------------------------------------------------------
+
+   call H5Dopen_f(fhnd, '/Geolocation/Solar_Azimuth_LW', dhnd, iret)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 open error for: /Geolocation/Solar_Azimuth_LW"/))
+
+      call H5Fclose_f(fhnd, iret)
+
+      return
+
+   end if
+
+   call H5Dread_f(dhnd, H5T_NATIVE_REAL, solar_azimuth_lw, sz_geo, iret, &
+                  H5S_ALL_F, H5S_ALL_F)
+
+   if (iret < 0) then
+
+      call da_warning(__FILE__,__LINE__, &
+         (/"HDF5 read error for: /Geolocation/Solar_Azimuth_LW"/))
+
+   endif
+
+   call H5Dclose_f(dhnd, iret)
+
+!-----------------------------------------------------------------------
+!  6. Close HDF5 file
 !-----------------------------------------------------------------------
 
    call H5Fclose_f(fhnd, iret)
 
 !-----------------------------------------------------------------------
-!  6. Calculate LW brightness temperature
+!  7. Calculate LW brightness temperature
 !-----------------------------------------------------------------------
 
    do j = 1, nobs_giirs
 
       do i = 1, nwn_lw
 
-         radiance = real(es_real_lw(i,j),r_kind)
+         radiance_lw = real(es_real_lw(i,j),r_kind)
 
-         if (radiance > 0.0_r_kind) then
+         if (radiance_lw > 0.0_r_kind) then
 
             tbb_lw(i,j) = c2 * real(wn_lw(i),r_kind) / &
                log(1.0_r_kind + &
-               c1 * real(wn_lw(i),r_kind)**3 / radiance)
+               c1 * real(wn_lw(i),r_kind)**3 / radiance_lw)
 
          else
 
@@ -304,7 +506,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end do
 
 !-----------------------------------------------------------------------
-!  7. Print test values
+!  8. Print test values
 !-----------------------------------------------------------------------
 
    write(unit=stdout,fmt=*) 'GIIRS LW test:'
@@ -313,7 +515,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    write(unit=stdout,fmt=*) 'TBB_LW(1,1)    = ', tbb_lw(1,1)
 
 !-----------------------------------------------------------------------
-!  8. Allocate sequential structure
+!  9. Allocate sequential structure
 !-----------------------------------------------------------------------
 
    if (.not. head_allocated) then
@@ -329,18 +531,14 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end if
 
 !-----------------------------------------------------------------------
-!  9. Loop over GIIRS observations
-!
-!      NOTE:
-!      At this stage we only test the radiance -> TBB conversion.
-!      The exact mapping between HDF5 spectral samples and WRFDA
-!      nchan will be handled separately.
+!  10. Loop over GIIRS observations
 !-----------------------------------------------------------------------
 
    do j = 1, nobs_giirs
 
-      info%lat = 0.0_r_kind
-      info%lon = 0.0_r_kind
+      ! Assign geolocation before calling da_llxy.
+      info%lat = real(latitude_lw(j), r_kind)
+      info%lon = real(longitude_lw(j), r_kind)
 
       call da_llxy(info, loc, outside, outside_all)
 
@@ -355,69 +553,32 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
       num_giirs_used = num_giirs_used + 1
 
       allocate(p%tb_inv(nchan))
-
       p%info = info
-      p%loc  = loc
-
+      p%loc  = loc      
       p%landsea_mask = 1
-
       p%scanpos = 1.0_r_kind
-
-      p%satzen = 0.0_r_kind
-      p%satazi = 0.0_r_kind
-      p%solzen = 0.0_r_kind
-      p%solazi = 0.0_r_kind
-
+      p%satzen = real(sensor_zenith_lw(j), r_kind)
+      p%satazi = real(sensor_azimuth_lw(j), r_kind)
+      p%solzen = real(solar_zenith_lw(j), r_kind)
+      p%solazi = real(solar_azimuth_lw(j), r_kind)
       p%sensor_index = inst
-
       p%ifgat = 1
-
-!-----------------------------------------------------------------------
-!     Temporary channel assignment
-!
-!     IMPORTANT:
-!     This is intentionally only a placeholder for the first test.
-!-----------------------------------------------------------------------
-
-      allocate(data_all(nchan))
-      data_all = missing_r
-
-      do i = 1, nchan
-
-         if (i <= nwn_lw) then
-
-            if (tbb_lw(i,j) >= 100.0_r_kind .and. &
-                tbb_lw(i,j) <= 450.0_r_kind) then
-                data_all(i) = tbb_lw(i,j)
-            endif
-
-         end if
-
-      end do
-
-      p%tb_inv(1:nchan) = data_all(1:nchan)
+      p%tb_inv(1:nchan) = tbb_lw(1:nchan, j)
 
       allocate(p%next)
-
       p => p%next
-
       nullify(p%next)
 
    end do
 
 !-----------------------------------------------------------------------
-!  10. Allocate innovation structure
+!  11. Allocate innovation structure
 !-----------------------------------------------------------------------
 
    iv%total_rad_pixel   = iv%total_rad_pixel + num_giirs_used
-   iv%total_rad_channel = iv%total_rad_channel + &
-                          num_giirs_used*nchan
-
-   iv%info(radiance)%nlocal = iv%info(radiance)%nlocal + &
-                              num_giirs_used
-
-   iv%info(radiance)%ntotal = iv%info(radiance)%ntotal + &
-                              num_giirs_global
+   iv%total_rad_channel = iv%total_rad_channel + num_giirs_used*nchan
+   iv%info(radiance)%nlocal = iv%info(radiance)%nlocal + num_giirs_used
+   iv%info(radiance)%ntotal = iv%info(radiance)%ntotal + num_giirs_global
 
    if (num_giirs_used > 0) then
 
@@ -429,7 +590,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    end if
 
 !-----------------------------------------------------------------------
-!  11. Transfer sequential structure to innovation structure
+!  12. Transfer sequential structure to innovation structure
 !-----------------------------------------------------------------------
 
    p => head
@@ -449,10 +610,8 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb)
    deallocate(p)
 
 !-----------------------------------------------------------------------
-!  12. Cleanup
+!  13. Cleanup
 !-----------------------------------------------------------------------
-
-   deallocate(data_all)
 
    if (trace_use) call da_trace_exit("da_read_obs_hdf5giirs")
 
