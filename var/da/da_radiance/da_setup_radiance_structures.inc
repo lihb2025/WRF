@@ -236,7 +236,7 @@ subroutine da_setup_radiance_structures( grid, ob, iv )
       if (use_giirsobs) then
 #if defined(HDF5)
          write(unit=stdout,fmt='(a)') 'Reading GIIRS data in HDF5 format'
-         call da_read_obs_hdf5giirs (iv, 'L1GIIRS')
+         call da_read_obs_hdf5giirs (iv, 'L1GIIRS', 'L1GIIRS_CLW')
 #else
          message(1)='To read GIIRS data, WRFDA must be compiled with HDF5'
          call da_error(__FILE__,__LINE__,message(1:1))
