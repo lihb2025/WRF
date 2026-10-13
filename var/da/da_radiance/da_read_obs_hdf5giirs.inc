@@ -35,6 +35,9 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
    integer(HID_T) shnd1, shnd2         ! dataspace handle
    integer(HSIZE_T) sz1(1)             ! array size 1
    integer(HSIZE_T) sz2(2)             ! array size 2
+   integer(HID_T) :: atype
+   integer(SIZE_T) :: str_len
+   integer(HSIZE_T) :: dims(1)
 
 !  array data
    real(4) :: es_real_lw(nwn_lw,nobs_giirs)
@@ -75,7 +78,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
    integer(i_kind)   :: ifgat, iout, iobs
    logical           :: outside, outside_all, iuse
 
-   integer           :: i,j,k,l,m,n, ifile, isubfile, landsea_mask
+   integer           :: i,j,k,l,m,n, ifile, isubfile, landsea_mask, clw
    logical           :: found, head_found, head_allocated
 
 ! Other work variables
@@ -85,11 +88,13 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
    integer(i_kind)  :: num_giirs_local_local, num_giirs_global_local, num_giirs_file_local
    integer(i_kind)  :: itx, itt
    character(80)    :: filename1, filename2
+   character(len=11) :: begin_date
+   character(len=13) :: begin_time
    integer          :: nchan,ilongitude,ilatitude,ichannels
    integer          :: nfile
    character(80)    :: fname_tb(nfile_max)
    character(80)    :: fname_clw(nfile_max)
-   logical          :: fexist, got_clp_file
+   logical          :: fexist, got_clw_file
 
 ! Allocatable arrays
    integer(i_kind),allocatable  :: ptotal(:)
@@ -202,6 +207,52 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          got_clw_file = .true.
       endif
 
+      ! Read Observing Beginning Date
+      call h5aopen_f(fhnd1, "Observing Beginning Date", ahnd1, iret)
+      if (iret.lt.0) then
+         call da_warning(__FILE__,__LINE__, (/"HDF5 attribute open error: Beginning Date"/))
+         call h5fclose_f(fhnd1, iret)
+         return
+      end if
+      call h5aget_type_f(ahnd1, atype, iret)
+      dims(1) = 1
+      call h5aread_f(ahnd1, atype, begin_date, dims, iret)
+      call h5aclose_f(ahnd1, iret)
+
+      if (iret.lt.0) then
+         call da_warning(__FILE__,__LINE__, (/"HDF5 attribute read error: Beginning Date"/))
+         call h5fclose_f(fhnd1, iret)
+         return
+      end if
+
+      write(unit=stdout,fmt=*) 'begin_date: ', begin_date
+      read(begin_date(1:4), '(I4)') idate5(1)
+      read(begin_date(6:7), '(I2)') idate5(2)
+      read(begin_date(9:10), '(I2)') idate5(3)
+
+      ! Read Observing Beginning Time
+      call h5aopen_f(fhnd1, "Observing Beginning Time", ahnd2, iret)
+      if (iret.lt.0) then
+         call da_warning(__FILE__,__LINE__, (/"HDF5 attribute open error: Beginning Time"/))
+         call h5fclose_f(fhnd1, iret)
+         return
+      end if
+      call h5aget_type_f(ahnd2, atype, iret)
+      dims(1) = 1
+      call h5aread_f(ahnd2, atype, begin_time, dims, iret)
+      call h5aclose_f(ahnd2, iret)
+
+      if (iret.lt.0) then
+         call da_warning(__FILE__,__LINE__, (/"HDF5 attribute read error: Beginning Time"/))
+         call h5fclose_f(fhnd1, iret)
+         return
+      end if
+
+      write(unit=stdout,fmt=*) 'begin_time: ', begin_time
+      read(begin_time(1:2), '(I2)') idate5(4)
+      read(begin_time(4:5), '(I2)') idate5(5)
+      read(begin_time(7:8), '(I2)') idate5(6)
+
    !  Read LW wavenumber
       call H5Dopen_f(fhnd1, '/Data/WN_LW', dhnd1, iret)
       if (iret.lt.0) then
@@ -263,9 +314,9 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call H5Dclose_f(dhnd1, iret)
 
    !  Read sensor zenith angle
-      call H5Dopen_f(fhnd1, '/Geolocation/sat_zenith_LW', dhnd1, iret)
+      call H5Dopen_f(fhnd1, '/Geolocation/Sensor_Zenith_LW', dhnd1, iret)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/sat_zenith_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/Sensor_Zenith_LW"/))
          call H5Fclose_f(fhnd1, iret)
          return
       end if
@@ -273,14 +324,14 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call H5Dread_f(dhnd1, H5T_NATIVE_REAL, sat_zenith_lw, sz1, iret, &
                      H5S_ALL_F, H5S_ALL_F)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/sat_zenith_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/Sensor_Zenith_LW"/))
       endif
       call H5Dclose_f(dhnd1, iret)
 
    !  Read sensor azimuth angle
-      call H5Dopen_f(fhnd1, '/Geolocation/sat_azimuth_LW', dhnd1, iret)
+      call H5Dopen_f(fhnd1, '/Geolocation/Sensor_Azimuth_LW', dhnd1, iret)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/sat_azimuth_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/Sensor_Azimuth_LW"/))
          call H5Fclose_f(fhnd1, iret)
          return
       end if
@@ -288,14 +339,14 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call H5Dread_f(dhnd1, H5T_NATIVE_REAL, sat_azimuth_lw, sz1, iret, &
                      H5S_ALL_F, H5S_ALL_F)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/sat_azimuth_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/Sensor_Azimuth_LW"/))
       endif
       call H5Dclose_f(dhnd1, iret)
 
    !  Read solar zenith angle
-      call H5Dopen_f(fhnd1, '/Geolocation/sun_zenith_LW', dhnd1, iret)
+      call H5Dopen_f(fhnd1, '/Geolocation/Solar_Zenith_LW', dhnd1, iret)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/sun_zenith_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/Solar_Zenith_LW"/))
          call H5Fclose_f(fhnd1, iret)
          return
       end if
@@ -303,14 +354,14 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call H5Dread_f(dhnd1, H5T_NATIVE_REAL, sun_zenith_lw, sz1, iret, &
                      H5S_ALL_F, H5S_ALL_F)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/sun_zenith_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/Solar_Zenith_LW"/))
       endif
       call H5Dclose_f(dhnd1, iret)
 
    !  Read solar azimuth angle
-      call H5Dopen_f(fhnd1, '/Geolocation/sun_azimuth_LW', dhnd1, iret)
+      call H5Dopen_f(fhnd1, '/Geolocation/Solar_Azimuth_LW', dhnd1, iret)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/sun_azimuth_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 open error for: /Geolocation/Solar_Azimuth_LW"/))
          call H5Fclose_f(fhnd1, iret)
          return
       end if
@@ -318,7 +369,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call H5Dread_f(dhnd1, H5T_NATIVE_REAL, sun_azimuth_lw, sz1, iret, &
                      H5S_ALL_F, H5S_ALL_F)
       if (iret.lt.0) then
-         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/sun_azimuth_LW"/))
+         call da_warning(__FILE__,__LINE__,(/"HDF5 read error for: /Geolocation/Solar_Azimuth_LW"/))
       endif
       call H5Dclose_f(dhnd1, iret)
 
@@ -328,7 +379,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       if ( got_clw_file ) then
       ! read CLW from infile_clw:
          call H5Dopen_f(fhnd2,'/S1/cloudWaterPath',dhnd2,iret)
-         sz1(1)=nobs_giirs
+
          call H5Dread_f(dhnd2,H5T_NATIVE_REAL,clw,sz1,iret,H5S_ALL_F,H5S_ALL_F)
          if(iret.lt.0)then
             call da_warning(__FILE__,__LINE__, &
@@ -336,17 +387,18 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          endif
          call H5Dclose_f(dhnd2,iret)
       ! sample display
-         write(unit=stdout,fmt=*)'clw(pixel=1,scan=1): ',clw(100,1),clw(2,100),clw(100,2)
+         write(unit=stdout,fmt=*)'clw(pixel=1,scan=1): ',clw
     
       ! read SurfaceType from infile_clw:
          call H5Dopen_f(fhnd2,'/S1/surfaceTypeIndex',dhnd2,iret)
-         sz1(1)=nobs_giirs
+
          call H5Dread_f(dhnd2,H5T_NATIVE_INTEGER,landsea_mask,sz1,iret,H5S_ALL_F,H5S_ALL_F)
          if(iret.lt.0)then
             call da_warning(__FILE__,__LINE__, &
                (/"HDF5 read error for: CLW data"/))
          endif
          call H5Dclose_f(dhnd2,iret)
+      end if
 
    !  Print test values
       write(unit=stdout,fmt=*) 'GIIRS LW test:'
@@ -369,6 +421,9 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       scan_loop:     do isubfile=1, nsubfile	 
 
          call da_get_julian_time(idate5(1),idate5(2),idate5(3),idate5(4),idate5(5),obs_time)
+         write(stdout,*) 'DEBUG idate5 = ', idate5
+         write(stdout,*) 'DEBUG obs_time = ', obs_time
+         write(stdout,*) 'DEBUG time_slots = ', time_slots(0), time_slots(num_fgat_time)
 		 
          if ( obs_time < time_slots(0) .or. obs_time >= time_slots(num_fgat_time) ) cycle scan_loop
          do ifgat=1,num_fgat_time
