@@ -42,6 +42,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
 !  array data
    real(4) :: es_real_lw(nwn_lw,nobs_giirs)
    real(4) :: wn_lw(nwn_lw)
+   real(4) :: clw(nwn_lw,nobs_giirs)     
    real(4) :: latitude_lw(nobs_giirs)
    real(4) :: longitude_lw(nobs_giirs)
 
@@ -78,7 +79,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
    integer(i_kind)   :: ifgat, iout, iobs
    logical           :: outside, outside_all, iuse
 
-   integer           :: i,j,k,l,m,n, ifile, isubfile, landsea_mask, clw
+   integer           :: i,j,k,l,m,n, ifile, isubfile, landsea_mask
    logical           :: found, head_found, head_allocated
 
 ! Other work variables
@@ -88,8 +89,8 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
    integer(i_kind)  :: num_giirs_local_local, num_giirs_global_local, num_giirs_file_local
    integer(i_kind)  :: itx, itt
    character(80)    :: filename1, filename2
-   character(len=11) :: begin_date
-   character(len=13) :: begin_time
+   character(10)    :: begin_date
+   character(12)    :: begin_time
    integer          :: nchan,ilongitude,ilatitude,ichannels
    integer          :: nfile
    character(80)    :: fname_tb(nfile_max)
@@ -198,8 +199,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call H5Fopen_f(fname_tb(ifile),H5F_ACC_RDONLY_F,fhnd1,iret,H5P_DEFAULT_F)
       if (iret.lt.0) then
          call da_warning(__FILE__,__LINE__,(/"Cannot open GIIRS HDF5 file: "//trim(infile_tb)/))
-         if (trace_use) call da_trace_exit("da_read_obs_hdf5giirs")
-         return
+         cycle infile_loop
       end if
       got_clw_file = .false.
       call H5Fopen_f(fname_clw(ifile),H5F_ACC_RDONLY_F,fhnd2,iret,H5P_DEFAULT_F)
@@ -215,7 +215,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          return
       end if
       call h5aget_type_f(ahnd1, atype, iret)
-      dims(1) = 1
+      dims(1) = 1 
       call h5aread_f(ahnd1, atype, begin_date, dims, iret)
       call h5aclose_f(ahnd1, iret)
 
@@ -225,7 +225,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          return
       end if
 
-      write(unit=stdout,fmt=*) 'begin_date: ', begin_date
+      write(unit=stdout,fmt=*) 'begin_date: ', begin_date 
       read(begin_date(1:4), '(I4)') idate5(1)
       read(begin_date(6:7), '(I2)') idate5(2)
       read(begin_date(9:10), '(I2)') idate5(3)
@@ -252,7 +252,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       read(begin_time(1:2), '(I2)') idate5(4)
       read(begin_time(4:5), '(I2)') idate5(5)
       read(begin_time(7:8), '(I2)') idate5(6)
-
+      
    !  Read LW wavenumber
       call H5Dopen_f(fhnd1, '/Data/WN_LW', dhnd1, iret)
       if (iret.lt.0) then
@@ -379,32 +379,33 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       if ( got_clw_file ) then
       ! read CLW from infile_clw:
          call H5Dopen_f(fhnd2,'/S1/cloudWaterPath',dhnd2,iret)
-
-         call H5Dread_f(dhnd2,H5T_NATIVE_REAL,clw,sz1,iret,H5S_ALL_F,H5S_ALL_F)
+         call H5Dread_f(dhnd2,H5T_NATIVE_REAL,clw,sz2,iret,H5S_ALL_F,H5S_ALL_F)
          if(iret.lt.0)then
             call da_warning(__FILE__,__LINE__, &
                (/"HDF5 read error for: CLW data"/))
          endif
          call H5Dclose_f(dhnd2,iret)
       ! sample display
-         write(unit=stdout,fmt=*)'clw(pixel=1,scan=1): ',clw
+         write(unit=stdout,fmt=*)'clw(pixel=1,scan=1): ',clw(100,1),clw(2,100),clw(100,2)
     
       ! read SurfaceType from infile_clw:
          call H5Dopen_f(fhnd2,'/S1/surfaceTypeIndex',dhnd2,iret)
-
          call H5Dread_f(dhnd2,H5T_NATIVE_INTEGER,landsea_mask,sz1,iret,H5S_ALL_F,H5S_ALL_F)
          if(iret.lt.0)then
             call da_warning(__FILE__,__LINE__, &
                (/"HDF5 read error for: CLW data"/))
          endif
          call H5Dclose_f(dhnd2,iret)
+
+         ! close infile_clw and HDF5
+         call H5Fclose_f(fhnd2,iret)         
       end if
 
    !  Print test values
       write(unit=stdout,fmt=*) 'GIIRS LW test:'
       write(unit=stdout,fmt=*) 'WN_LW(1)       = ', wn_lw(1)
       write(unit=stdout,fmt=*) 'ES_RealLW(1,1) = ', es_real_lw(1,1)
-      write(unit=stdout,fmt=*) 'TBB_LW(1,1)    = ', tbb_lw(1,1)
+
 
 ! 2.0 Loop to read hdf file and assign information to a sequential structure
 !-------------------------------------------------------------------------
@@ -421,10 +422,11 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       scan_loop:     do isubfile=1, nsubfile	 
 
          call da_get_julian_time(idate5(1),idate5(2),idate5(3),idate5(4),idate5(5),obs_time)
+
          write(stdout,*) 'DEBUG idate5 = ', idate5
          write(stdout,*) 'DEBUG obs_time = ', obs_time
          write(stdout,*) 'DEBUG time_slots = ', time_slots(0), time_slots(num_fgat_time)
-		 
+
          if ( obs_time < time_slots(0) .or. obs_time >= time_slots(num_fgat_time) ) cycle scan_loop
          do ifgat=1,num_fgat_time
             if ( obs_time >= time_slots(ifgat-1) .and. obs_time  < time_slots(ifgat) ) exit
@@ -487,6 +489,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
                   tbb_lw(i,j) = missing_r
                end if
             end do
+            write(unit=stdout,fmt=*) 'TBB_LW(1,1)    = ', tbb_lw(1,1)
 
    
             if (i <= nwn_lw) then
@@ -649,7 +652,8 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       call da_allocate_rad_iv(inst, nchan, iv)
    end if
 
-!  Transfer sequential structure to innovation structure
+!  6.0 assign sequential structure to innovation structure
+!-------------------------------------------------------------
    p => head
 
    do i = 1, num_giirs_used
@@ -665,12 +669,11 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
    end do
 
    deallocate(p)
-
-!  Cleanup
-   deallocate(data_all)
+   deallocate (ptotal)
 
    if (trace_use) call da_trace_exit("da_read_obs_hdf5giirs")
-
+#else
+   call da_error(__FILE__,__LINE__,(/"Needs to be compiled with HDF5 library"/))
 #endif
 
 end subroutine da_read_obs_hdf5giirs
