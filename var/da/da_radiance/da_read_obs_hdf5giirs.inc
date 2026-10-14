@@ -225,7 +225,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          return
       end if
 
-      write(unit=stdout,fmt=*) 'begin_date: ', begin_date 
+      !write(unit=stdout,fmt=*) 'begin_date: ', begin_date 
       read(begin_date(1:4), '(I4)') idate5(1)
       read(begin_date(6:7), '(I2)') idate5(2)
       read(begin_date(9:10), '(I2)') idate5(3)
@@ -248,7 +248,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          return
       end if
 
-      write(unit=stdout,fmt=*) 'begin_time: ', begin_time
+      !write(unit=stdout,fmt=*) 'begin_time: ', begin_time
       read(begin_time(1:2), '(I2)') idate5(4)
       read(begin_time(4:5), '(I2)') idate5(5)
       read(begin_time(7:8), '(I2)') idate5(6)
@@ -402,9 +402,9 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       end if
 
    !  Print test values
-      write(unit=stdout,fmt=*) 'GIIRS LW test:'
-      write(unit=stdout,fmt=*) 'WN_LW(1)       = ', wn_lw(1)
-      write(unit=stdout,fmt=*) 'ES_RealLW(1,1) = ', es_real_lw(1,1)
+   !  write(unit=stdout,fmt=*) 'GIIRS LW test:'
+   !  write(unit=stdout,fmt=*) 'WN_LW(1)       = ', wn_lw(1)
+   !  write(unit=stdout,fmt=*) 'ES_RealLW(1,1) = ', es_real_lw(1,1)
 
 
 ! 2.0 Loop to read hdf file and assign information to a sequential structure
@@ -423,10 +423,6 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
 
          call da_get_julian_time(idate5(1),idate5(2),idate5(3),idate5(4),idate5(5),obs_time)
 
-         write(stdout,*) 'DEBUG idate5 = ', idate5
-         write(stdout,*) 'DEBUG obs_time = ', obs_time
-         write(stdout,*) 'DEBUG time_slots = ', time_slots(0), time_slots(num_fgat_time)
-
          if ( obs_time < time_slots(0) .or. obs_time >= time_slots(num_fgat_time) ) cycle scan_loop
          do ifgat=1,num_fgat_time
             if ( obs_time >= time_slots(ifgat-1) .and. obs_time  < time_slots(ifgat) ) exit
@@ -436,10 +432,11 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
          fov_loop:      do j = 1, nobs_giirs
 
             if ( sat_zenith_lw(j) > 65.0 ) cycle fov_loop
-            
-            ! Assign geolocation before calling da_llxy.
+            num_giirs_file       = num_giirs_file + 1
+            num_giirs_file_local = num_giirs_file_local + 1            
             info%lat = real(latitude_lw(j), r_kind)
             info%lon = real(longitude_lw(j), r_kind)
+!            write(unit=stdout, fmt='(a,i6,2(a,f12.6))') 'GIIRS j=', j, ' lat=', info%lat, ' lon=', info%lon
 
             call da_llxy(info, loc, outside, outside_all)
             if (outside_all) cycle fov_loop
@@ -490,7 +487,19 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
                end if
             end do
             write(unit=stdout,fmt=*) 'TBB_LW(1,1)    = ', tbb_lw(1,1)
+            write(unit=stdout,fmt=*) 'j = ', j
+            write(unit=stdout,fmt=*) 'nwn_lw = ', nwn_lw
+            write(unit=stdout,fmt=*) 'c1 = ', c1
+            write(unit=stdout,fmt=*) 'c2 = ', c2
 
+            do i = 1, nwn_lw
+               write(unit=stdout,fmt=*) '--------------------------------'
+               write(unit=stdout,fmt=*) 'i = ', i
+               write(unit=stdout,fmt=*) 'es_real_lw(i,j) = ', es_real_lw(i,j)
+               write(unit=stdout,fmt=*) 'wn_lw(i) = ', wn_lw(i)
+               write(unit=stdout,fmt=*) 'radiance_lw = ', real(es_real_lw(i,j),r_kind)
+               write(unit=stdout,fmt=*) 'tbb_lw(i,j) = ', tbb_lw(i,j)
+            end do
    
             if (i <= nwn_lw) then
                if (tbb_lw(i,j) >= 100.0_r_kind .and. tbb_lw(i,j) <= 450.0_r_kind) then
