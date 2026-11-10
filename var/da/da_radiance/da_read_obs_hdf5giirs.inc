@@ -419,16 +419,16 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
       end if
 
       ! start scan_loop
-      scan_loop:     do isubfile=1, nsubfile	 
+      !scan_loop:     do isubfile=1, nsubfile	 
 
          call da_get_julian_time(idate5(1),idate5(2),idate5(3),idate5(4),idate5(5),obs_time)
 
-         if ( obs_time < time_slots(0) .or. obs_time >= time_slots(num_fgat_time) ) cycle scan_loop
+         if ( obs_time < time_slots(0) .or. obs_time >= time_slots(num_fgat_time) ) cycle infile_loop
          do ifgat=1,num_fgat_time
             if ( obs_time >= time_slots(ifgat-1) .and. obs_time  < time_slots(ifgat) ) exit
          end do
 
-      !  start fov_loop: longitude
+      !  start fov_loop
          fov_loop:      do j = 1, nobs_giirs
 
             if ( sat_zenith_lw(j) > 65.0 ) cycle fov_loop
@@ -512,7 +512,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
 !--------------------------------------------------------------------------
             allocate(p%tb_inv(nchan))
             p%info = info
-            p%loc  = loc      
+            p%loc  = loc
             p%landsea_mask = 1
             p%scanpos = 1.0_r_kind
             p%satzen = real(sat_zenith_lw(j), r_kind)
@@ -528,7 +528,7 @@ subroutine da_read_obs_hdf5giirs (iv, infile_tb, infile_clw)
             nullify(p%next)
 
          end do fov_loop
-      end do scan_loop
+      !end do scan_loop
 
       write(stdout,fmt='(3a,i7)') ' In file: ',trim(fname_tb(ifile)),' got num_giirs_file    : ',num_giirs_file_local
       write(stdout,fmt='(3a,i7)') ' In file: ',trim(fname_tb(ifile)),' got num_giirs_global  : ',num_giirs_global_local
